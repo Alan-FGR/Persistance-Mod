@@ -1,7 +1,7 @@
 --	
 --	####################################################################
 --	SZABO'S PERSISTANCE MOD
---	0.0.1b	NOTE: 'b' stands for BETA VERSION! Use at your own risk!!!
+--	0.0.1.02b	NOTE: 'b' stands for BETA VERSION! Use at your own risk!!!
 --	####################################################################
 --
 -- CONFIGURE THE KEYS BELOW. Further down you find a list of the codes
@@ -103,9 +103,11 @@ local loopspeed = 5			-- increase ONLY if vehicles are taking too long to appear
 --	CHANGELOG
 --	####################################################################
 --	
+--	0.0.1.02b - Improved backwards compatibility.
+--
 --	0.0.1b - Small code revamp and fixes, and now the following data will also be saved:
 --			Bulletproof tyres; metallic paint; rims paint; tyre smoke colour; livery (very few vehicles use this)
---		-> Fixed my inttobool function which was the culprit of the Xenon Headlamps problems :)
+--		-> Fixed my inttobool function_ which was the culprit of the Xenon Headlamps problems :)
 --
 --	0.0.0.07b - minor fixes
 --
@@ -245,7 +247,7 @@ function showtext(str)
 	texttoshow = str
 end
 
-local function drawtext(str)
+local function drawtext()
 	UI.SET_TEXT_FONT(0)
 	UI.SET_TEXT_SCALE(0.6, 0.8)
 	UI.SET_TEXT_COLOUR(255, 255, 255, 255)
@@ -411,6 +413,10 @@ local function setvehicledata(v, dtype, parslist)
 	if (parslist == nil) then
 		return 2
 	elseif( type(parslist) ~= type({}) or #parslist < 1) then
+		if (dtype == 'extracols') then
+			print('resetting unsaved colours to neutral colour (backwards compatibility)')
+			VEHICLE.SET_VEHICLE_EXTRA_COLOURS(v, 0, 0)
+		end
 		return 3
 	elseif (dtype == 'mod') then
 		VEHICLE.SET_VEHICLE_MOD(v, parslist[1], parslist[2], false)
@@ -577,8 +583,9 @@ function szabopersist.tick()
 		
 		if (texttimer > 1) then
 			if (not CAM.IS_SCREEN_FADED_OUT()) then
-				texttimer = texttimer-2
+				texttimer = texttimer-1
 			end
+			drawtext()
 			return 0
 		else
 			hot = true
@@ -731,10 +738,10 @@ function szabopersist.tick()
 	lastPlayerState = playerState;
 	
 	if (texttimer > 0) then
-		drawtext(str)
+		drawtext()
 	end
 	
-	szabopersist.debug()
+	--szabopersist.debug()
 	
 end
 
@@ -747,6 +754,26 @@ function szabopersist.debug()
 	
 	local currentVehicle = PED.GET_VEHICLE_PED_IS_IN(playerPed, false)	
 
+	
+	
+	print(UI.IS_PAUSE_MENU_ACTIVE(), UI.GET_PAUSE_MENU_STATE(), CAM.IS_SCREEN_FADING_OUT(), CAM.IS_SCREEN_FADED_OUT())
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 --	VEHICLE.SET_VEHICLE_MOD_KIT(currentVehicle, 0)
 	
 

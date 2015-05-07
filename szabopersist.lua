@@ -1,7 +1,7 @@
 --	
 --	####################################################################
 --	SZABO'S PERSISTANCE MOD
---	0.0.1.02b	NOTE: 'b' stands for BETA VERSION! Use at your own risk!!!
+--	0.0.1.05bWIP	NOTE: 'b' stands for BETA VERSION! Use at your own risk!!!
 --	####################################################################
 --
 -- CONFIGURE THE KEYS BELOW. Further down you find a list of the codes
@@ -103,6 +103,8 @@ local loopspeed = 5			-- increase ONLY if vehicles are taking too long to appear
 --	CHANGELOG
 --	####################################################################
 --	
+--	0.0.1.05b WIP - Custom tyres works now.
+--
 --	0.0.1.02b - Improved backwards compatibility.
 --
 --	0.0.1b - Small code revamp and fixes, and now the following data will also be saved:
@@ -127,6 +129,8 @@ local loopspeed = 5			-- increase ONLY if vehicles are taking too long to appear
 --
 --	####################################################################
 --
+--	TODO: Reveal all saved vehicles on the map when the game is paused.
+
 --	TODO: If VEHICLE::IS_VEHICLE_IN_GARAGE_AREA then don't save it
 --				### UPDATE: Need to check every garage :(
 
@@ -337,17 +341,17 @@ local function addvehicletosavedarray(v)
 
 	
 	--## UPDATE 0.0.1b changes below
-	-- bulletproof tyres -- OK
-	table.insert(	vals,	VEHICLE.GET_VEHICLE_TYRES_CAN_BURST(v))
+
+	table.insert(	vals,	VEHICLE.GET_VEHICLE_TYRES_CAN_BURST(v))	-- bulletproof tyres -- OK
+	table_insertmultiple(	vals,	VEHICLE.GET_VEHICLE_EXTRA_COLOURS(v, 0, 0))	--metallic/pearlscent highlight colour AND rims colour
+	table.insert(	vals,	VEHICLE.GET_VEHICLE_LIVERY(v))	-- LIVERY FOR SOME MODELS (STOCK CARS)
+	table_insertmultiple(	vals,	VEHICLE.GET_VEHICLE_TYRE_SMOKE_COLOR(v, 0, 0, 0)) -- OK	-- tire smoke colour -- OK
 	
-	--metallic/pearlscent highlight colour AND rims colour
-	table_insertmultiple(	vals,	VEHICLE.GET_VEHICLE_EXTRA_COLOURS(v, 0, 0))
+	--## UPDATE 0.0.1.05b changes below
 	
-	-- LIVERY FOR SOME MODELS (STOCK CARS)
-	table.insert(	vals,	VEHICLE.GET_VEHICLE_LIVERY(v))
+	table.insert(	vals,	VEHICLE.GET_VEHICLE_MOD_VARIATION(v, 23)) --custom tyres
+	table.insert(	vals,	VEHICLE.GET_VEHICLE_MOD_VARIATION(v, 24)) --custom tyres
 	
-	-- tire smoke colour -- OK
-	table_insertmultiple(	vals,	VEHICLE.GET_VEHICLE_TYRE_SMOKE_COLOR(v, 0, 0, 0)) -- OK
 	
 	
 	unvid = unvid+1
@@ -431,6 +435,12 @@ local function setvehicledata(v, dtype, parslist)
 	elseif (dtype == 'tsmoke') then
 		VEHICLE.TOGGLE_VEHICLE_MOD(v, 20, true)
 		VEHICLE.SET_VEHICLE_TYRE_SMOKE_COLOR(v, parslist[1], parslist[2], parslist[3])
+	elseif (dtype == 'ctyres') then
+		if (parslist[1] == 'back') then
+			VEHICLE.SET_VEHICLE_MOD(v, 24, VEHICLE.GET_VEHICLE_MOD(v, 24), inttobool(parslist[2]))
+		else
+			VEHICLE.SET_VEHICLE_MOD(v, 23, VEHICLE.GET_VEHICLE_MOD(v, 23), inttobool(parslist[2]))
+		end
 	end
 	
 end
@@ -487,13 +497,19 @@ local function spawnvehiclefromdata(vals)
 		setvehicledata(v, 'togglemod', {18, vals[31]})	--VEHICLE.TOGGLE_VEHICLE_MOD(v, 18, inttobool(vals[31]));	--Turbo
 		setvehicledata(v, 'togglemod', {22, vals[32]})	--Xenon
 		setvehicledata(v, 'mod', {23, 	vals[33]}) 	--Front Wheels
-		setvehicledata(v, 'mod', {24, 	vals[34]}) 	--Back Wheels (BIKE ONLY)
+		setvehicledata(v, 'mod', {24, 	vals[34]}) 	--Back Wheels (BIKE ONLY)  --check if is bike?
 		
 		--## UPDATE 0.0.1b changes below
 		setvehicledata(v, 'tyres', { vals[35] })	-- bulletproof tyres
 		setvehicledata(v, 'extracols', {vals[36], vals[37]})	--metallic/pearlscent highlight colour AND rims colour
 		setvehicledata(v, 'livery', {vals[38]})	--livery
 		setvehicledata(v, 'tsmoke', {vals[39], vals[40], vals[41]})	-- tire smoke colour
+		
+		--## UPDATE 0.0.1.05b changes below
+		setvehicledata(v, 'ctyres', {0, vals[42] })
+		setvehicledata(v, 'ctyres', {'back', vals[43] })  --check if is bike?
+		
+		
 		
 		--end cloning dolly
 		
@@ -694,6 +710,7 @@ function szabopersist.tick()
 			end
 		end
 		
+		-- TODO: OPTIMIZE BELOW (check vehiclePersistent?)
 		for i, svdata in ipairs(drivenSavedVehicles) do						
 			if (svdata[2] == currentVehicle) then										
 				vehiclePersistent = true
@@ -741,7 +758,7 @@ function szabopersist.tick()
 		drawtext()
 	end
 	
-	--szabopersist.debug()
+	szabopersist.debug()
 	
 end
 
@@ -756,7 +773,8 @@ function szabopersist.debug()
 
 	
 	
-	print(UI.IS_PAUSE_MENU_ACTIVE(), UI.GET_PAUSE_MENU_STATE(), CAM.IS_SCREEN_FADING_OUT(), CAM.IS_SCREEN_FADED_OUT())
+	--knowing if it's paused/ing
+	--print(UI.IS_PAUSE_MENU_ACTIVE(), UI.GET_PAUSE_MENU_STATE(), CAM.IS_SCREEN_FADING_OUT(), CAM.IS_SCREEN_FADED_OUT())
 	
 	
 	
@@ -764,8 +782,11 @@ function szabopersist.debug()
 	
 	
 	
-	
-	
+	-- print(VEHICLE.GET_VEHICLE_MOD_VARIATION(currentVehicle, 23)) --returns true if front tyres are custom(or all tyres for cars. 24 is rear bike tyres
+	-- print(VEHICLE.GET_VEHICLE_MOD_VARIATION(currentVehicle, 23))
+	-- VEHICLE.SET_VEHICLE_MOD(currentVehicle, 23, VEHICLE.GET_VEHICLE_MOD(currentVehicle, 23), false) --as before 24 for rear bike tyres
+
+	--VEHICLE.GET_VEHICLE_NUMBER_PLATE_TEXT_INDEX(currentVehicle)
 	
 	
 	

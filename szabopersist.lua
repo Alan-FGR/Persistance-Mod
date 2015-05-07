@@ -1,7 +1,7 @@
 --	
 --	####################################################################
 --	SZABO'S PERSISTANCE MOD
---	0.0.1.05bWIP	NOTE: 'b' stands for BETA VERSION! Use at your own risk!!!
+--	0.0.1.06b	NOTE: 'b' stands for BETA VERSION! Use at your own risk!!!
 --	####################################################################
 --
 -- CONFIGURE THE KEYS BELOW. Further down you find a list of the codes
@@ -76,8 +76,15 @@ local useplates = true --change to false if you don't want the plates to change
 --	The saved vehicles are saved to a file in the disk and will be there after you exit and relaunch the game.
 --
 -- 	KNOWN ISSUES:
---	THE FOLLOWING WON'T BE SAVED: Neon lights, Plate style, Chrome paint, Tyres sides markings
---	Mate paintings will be reverted to gloss
+--	THE FOLLOWING WON'T BE SAVED: Neon lights, Plate style
+--	If you don't change the paint type in LSC and browse other paints, the saved paint type is going to be the
+--	one that was highlighted when you cancelled. This doesn't apply to colours, only paint types are affected 
+--	e.g.: matte, metallic, etc.. Please note that if you do change the paint type, no matter which painting was
+--	highlighted when you cancelled the purchase, it will work correctly. This problem will only happen on the
+--	rare occasions in which you enter the LSC with a paint 'x' in you car, then browse another category, say, 
+--	'chrome', and hit 'cancel' (Esc or B) until you leave LSC AND don't change the original paint 'x'.
+--	This shouldn't affect most people, but it's a bug that unfortunately I'm not able to fix. The bug is on the
+--	following native function: VEHICLE::GET_VEHICLE_MOD_COLOR_1(vehicle, 0, 0, 0)	
 --
 --	####################################################################
 --
@@ -103,7 +110,8 @@ local loopspeed = 5			-- increase ONLY if vehicles are taking too long to appear
 --	CHANGELOG
 --	####################################################################
 --	
---	0.0.1.05b WIP - Custom tyres works now.
+--	0.0.1.06b - Custom tyres works now. (Thanks to unknown modder @ gtaforums.com)
+--				Paint shader works now. (See Known Issues)
 --
 --	0.0.1.02b - Improved backwards compatibility.
 --
@@ -114,6 +122,27 @@ local loopspeed = 5			-- increase ONLY if vehicles are taking too long to appear
 --	0.0.0.07b - minor fixes
 --
 --	PREVIOUS - no changelog for previous versions - see forum thread if curious
+--	
+--	####################################################################
+--	CREDITS: (to be ordered)
+--	####################################################################
+--	
+--	Alexander Blade for Script Hook
+--	headscript @ gtaforums.com for LUA Plugin for Script Hook
+--	
+--	####################################################################
+--	THANKS:
+--	####################################################################
+--	
+--	I would like to thank everyone who encouraged me in some way, either by voting,
+--	commenting, making a video, sharing a snippet, etc.
+--	
+--	And want to thank these guys specially:
+--	-> janimal @ gtaforums.com	for helping me test and debug the mod extensively
+--	(TODO add more | please contact me if you think you should be here!)
+--	
+--	
+--	
 --	
 --	####################################################################
 --	WARNING: THE LINES BELOW CONTAIN DEVELOPMENT DATA (IT'S MESSY)
@@ -352,6 +381,12 @@ local function addvehicletosavedarray(v)
 	table.insert(	vals,	VEHICLE.GET_VEHICLE_MOD_VARIATION(v, 23)) --custom tyres
 	table.insert(	vals,	VEHICLE.GET_VEHICLE_MOD_VARIATION(v, 24)) --custom tyres
 	
+	--## UPDATE 0.0.1.06b below
+	local paintshaderid = VEHICLE.GET_VEHICLE_MOD_COLOR_1(v, 0, 0, 0) --this is kinda buggy
+	table.insert( vals, paintshaderid)
+	local paintshaderid2 = VEHICLE.GET_VEHICLE_MOD_COLOR_2(v, 0, 0)
+	table.insert( vals, paintshaderid2)
+	
 	
 	
 	unvid = unvid+1
@@ -408,7 +443,14 @@ local function loadsaveddata()
 	
 end
 
+-- function indieloop()
+	-- while (true) do
+		-- print(UI.IS_PAUSE_MENU_ACTIVE(), UI.GET_PAUSE_MENU_STATE())
+	-- end
+-- end
+
 function szabopersist.init()
+    -- coroutine.resume(coroutine.create(indieloop))
 	loadsaveddata()
 end
 
@@ -441,6 +483,14 @@ local function setvehicledata(v, dtype, parslist)
 		else
 			VEHICLE.SET_VEHICLE_MOD(v, 23, VEHICLE.GET_VEHICLE_MOD(v, 23), inttobool(parslist[2]))
 		end
+	elseif (dtype == 'paint') then
+		if (parslist[2] ~= nil) then
+			if (parslist[1] == 1) then
+				VEHICLE.SET_VEHICLE_MOD_COLOR_1(v, parslist[2], 0, 0)
+			else
+				VEHICLE.SET_VEHICLE_MOD_COLOR_2(v, parslist[2], 0)
+			end
+		end
 	end
 	
 end
@@ -467,13 +517,18 @@ local function spawnvehiclefromdata(vals)
 		VEHICLE.SET_VEHICLE_ON_GROUND_PROPERLY(v);
 		
 		--cloning vehicle
+		VEHICLE.SET_VEHICLE_MOD_KIT(v, 0);
 		
+		--## 0.0.1.06b changes below
+		setvehicledata(v, 'paint', {1,vals[44]})   --paint shader TODO:move up
+		setvehicledata(v, 'paint', {2,vals[45]})
+				
+				
+				
 		VEHICLE.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR(v,vals[6],vals[7],vals[8])
 		VEHICLE.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR(v,vals[9],vals[10],vals[11])
 		
-		-- VEHICLE.SET_VEHICLE_LIVERY(v, VEHICLE.GET_VEHICLE_LIVERY(currentVehicle))
-
-		VEHICLE.SET_VEHICLE_MOD_KIT(v, 0);
+		
 		
 		VEHICLE.SET_VEHICLE_WHEEL_TYPE(v, 	vals[12]);   		--Wheels
 		VEHICLE.SET_VEHICLE_WINDOW_TINT(v, 	vals[13]);  		--Film
@@ -627,14 +682,10 @@ function szabopersist.tick()
 				if (dvd[2] == currentVehicle) then							
 					vehicleSaved = true
 					
-					table.remove(savedVehicles, getindexofvidinarray(dvd[1], savedVehicles))	
-					
 					print("vehicle is saved, unsaving it")
-					
+					table.remove(savedVehicles, getindexofvidinarray(dvd[1], savedVehicles))	
 					table.remove(drivenSavedVehicles, i)							
-					
 					ENTITY.SET_VEHICLE_AS_NO_LONGER_NEEDED(currentVehicle)			
-					
 					removevehiclemarker(currentVehicle)
 					
 					if (useplates) then
@@ -758,7 +809,7 @@ function szabopersist.tick()
 		drawtext()
 	end
 	
-	szabopersist.debug()
+	--szabopersist.debug()
 	
 end
 
@@ -771,6 +822,71 @@ function szabopersist.debug()
 	
 	local currentVehicle = PED.GET_VEHICLE_PED_IS_IN(playerPed, false)	
 
+	if(get_key_pressed(107)) then
+		local playerPed = PLAYER.PLAYER_PED_ID()
+		local currentVehicle = PED.GET_VEHICLE_PED_IS_IN(playerPed, false)
+		
+		
+		VEHICLE.SET_VEHICLE_MOD_KIT(currentVehicle, 0)
+		
+		local platestyle = (VEHICLE._0xF11BC2DD9A3E7195(currentVehicle))
+		
+		print(platestyle)
+		VEHICLE.SET_VEHICLE_NUMBER_PLATE_TEXT_INDEX(currentVehicle, 2)
+		
+
+		
+		
+	end
+	
+	
+	-- THESE DO NOTHING
+	-- VEHICLE.SET_VEHICLE_NUMBER_PLATE_TEXT_INDEX(currentVehicle, 3)
+	-- VEHICLE.SET_VEHICLE_NUMBER_PLATE_TEXT_INDEX(v, 1)
+	-- print('plate set')
+	
+	
+	
+	
+	local lastv = PLAYER.GET_PLAYERS_LAST_VEHICLE()
+	
+	-- ENTITY.SET_ENTITY_AS_MISSION_ENTITY(lastv, true, true)
+	-- VEHICLE.SET_VEHICLE_EXTRA_COLOURS(lastv, 0, 0)
+	-- VEHICLE.CLEAR_VEHICLE_CUSTOM_PRIMARY_COLOUR(lastv)
+	
+	
+	-- local paint, color, pearl = VEHICLE.GET_VEHICLE_MOD_COLOR_1(lastv, 0, 0, 0)
+	--print(VEHICLE.GET_VEHICLE_MOD_COLOR_1(currentVehicle, 0, 0, 0))
+	-- print(paint, color, pearl)
+	
+	
+	
+	local paintshaderid = VEHICLE.GET_VEHICLE_MOD_COLOR_1(lastv, 0, 0, 0) --this is kinda buggy
+	print(paintshaderid)
+	
+	--SHADERS:	0=metallic	1=classic	2=?			3=matte			4=metal		5=chrome
+	
+	
+	
+	
+	
+	
+	
+	-- VEHICLE.SET_VEHICLE_MOD_COLOR_1(lastv, 5, 0, 0)
+	-- VEHICLE.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR(lastv,255,0,0)
+	-- print(VEHICLE.GET_VEHICLE_CUSTOM_PRIMARY_COLOUR(lastv,0,0,0))
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	--knowing if it's paused/ing
@@ -788,6 +904,34 @@ function szabopersist.debug()
 
 	--VEHICLE.GET_VEHICLE_NUMBER_PLATE_TEXT_INDEX(currentVehicle)
 	
+	
+	
+	
+	
+	
+	
+	
+	-- VEHICLE.SET_VEHICLE_MOD_KIT(currentVehicle, 1)
+	
+	-- VEHICLE.SET_CAN_RESPRAY_VEHICLE(currentVehicle, false)
+	
+	-- VEHICLE.GET_VEHICLE_COLOUR_COMBINATION(currentVehicle)
+	-- VEHICLE.SET_VEHICLE_IS_CONSIDERED_BY_PLAYER(currentVehicle, true)
+	-- VEHICLE.GET_VEHICLE_EXTRA_COLOURS(currentVehicle, 0,0)
+	
+	
+	--print(VEHICLE.GET_VEHICLE_MOD_KIT(currentVehicle))
+	
+	-- VEHICLE.SET_VEHICLE_MOD_COLOR_1(currentVehicle, 5, 0, 0)
+	
+	-- VEHICLE.SET_VEHICLE_DIRT_LEVEL(currentVehicle, 10)
+	
+
+	
+	
+	-- print(VEHICLE.GET_VEHICLE_COLOR(currentVehicle, 0,0,0))
+	
+	-- VEHICLE.SET_CAN_RESPRAY_VEHICLE(currentVehicle, true)
 	
 	
 	
@@ -819,7 +963,7 @@ function szabopersist.debug()
 	--NOT USED (IN THE MOD) STUFF BELOW #####################################################
 	
 	--needed???
-	--VEHICLE.GET_VEHICLE_COLOUR_COMBINATION(currentVehicle) -- ALWAYS RETURNS THE SAME?
+	--print(VEHICLE.GET_VEHICLE_COLOUR_COMBINATION(currentVehicle)) -- ALWAYS RETURNS THE SAME?
 	-- SET_VEHICLE_COLOUR_COMBINATION(Any p0, Any p1) // 0xA557AEAD
 	
 	-- dirt lvl

@@ -1,15 +1,18 @@
 --	
 --	####################################################################
 --	SZABO'S PERSISTANCE MOD
---	0.0.1.06b	NOTE: 'b' stands for BETA VERSION! Use at your own risk!!!
+--	0.0.1.07bWIP	NOTE: 'b' stands for BETA VERSION! Use at your own risk!!!
 --	####################################################################
 --
 -- CONFIGURE THE KEYS BELOW. Further down you find a list of the codes
 local savekey = 96
 local reloadkey = 110
 local disablemodkey = 109
+local enablegamepad = true
 local modenabled = true -- SET TO false if you don't want the persistence to be enabled by default - does not affect saved
 						--vehicles, this only applies to the 'persistent' ones you drove, which can cause problems in missions
+-- Controller: 	Save: D-pad Right + Right Stick Click		Reset Vehicles: D-pad Right + Left Stick Click
+--						Enable/Disable: D-pad Right + Left Bumper + Left Stick Click
 
 -- CONFIGURE THE PATH WHERE THE FILE WILL BE SAVED. NOTE: Make sure Windows allows writing there.
 -- 99.9% of the problems will be due bad data on the line below OR Windows permissions nonsense.
@@ -110,6 +113,8 @@ local loopspeed = 5			-- increase ONLY if vehicles are taking too long to appear
 --	CHANGELOG
 --	####################################################################
 --	
+--	0.0.1.07b - Added Controller Support.
+--
 --	0.0.1.06b - Custom tyres works now. (Thanks to unknown modder @ gtaforums.com)
 --				Paint shader works now. (See Known Issues)
 --
@@ -505,7 +510,7 @@ local function spawnvehiclefromdata(vals)
 			wait(0)
 		end
 		
-		nearv = VEHICLE.GET_CLOSEST_VEHICLE(vals[2],vals[3],vals[4], 3, 0, 70)
+		local nearv = VEHICLE.GET_CLOSEST_VEHICLE(vals[2],vals[3],vals[4], 3, 0, 70)
 		--print(nearv)
 		if (nearv ~= 0 and not isvehiclespawnedordriven(nearv)) then
 			print('delete')
@@ -670,7 +675,11 @@ function szabopersist.tick()
 		loadpass = loadpass + 1
 	end
 	
-	if(get_key_pressed(savekey) and not lastkeystate) then					
+	local issavepressed = (get_key_pressed(savekey) or (enablegamepad and CONTROLS.IS_CONTROL_PRESSED(2, 190) and CONTROLS.IS_CONTROL_JUST_PRESSED(2, 210)))
+	local isreloadpressed = (get_key_pressed(reloadkey) or (enablegamepad and CONTROLS.IS_CONTROL_PRESSED(2, 190) and CONTROLS.IS_CONTROL_JUST_PRESSED(2, 209)))
+	local isdisablepressed = (get_key_pressed(disablemodkey) or (enablegamepad and CONTROLS.IS_CONTROL_PRESSED(2, 190) and CONTROLS.IS_CONTROL_PRESSED(2, 205)  and CONTROLS.IS_CONTROL_JUST_PRESSED(2, 209)))
+	
+	if(issavepressed and not lastkeystate) then					
 		
 		local currentVehicle = PED.GET_VEHICLE_PED_IS_IN(playerPed, false)
 		
@@ -727,11 +736,11 @@ function szabopersist.tick()
 			
 		
 		end
-		
-	elseif(get_key_pressed(reloadkey) and not lastreloadkeystate) then
+	
+	elseif(isreloadpressed and not lastreloadkeystate and not isdisablepressed) then
 		unloadspawnedsavedcars()
 		
-	elseif(get_key_pressed(disablemodkey) and not lastdisablekeystate) then
+	elseif(isdisablepressed and not lastdisablekeystate) then
 		disablepersistent()
 		modenabled = not modenabled
 		
@@ -800,9 +809,9 @@ function szabopersist.tick()
 		
 	end
 	
-	lastkeystate = get_key_pressed(savekey)
-	lastreloadkeystate = get_key_pressed(reloadkey)
-	lastdisablekeystate = get_key_pressed(disablemodkey)
+	lastkeystate = issavepressed
+	lastreloadkeystate = isreloadpressed
+	lastdisablekeystate = isdisablepressed
 	lastPlayerState = playerState;
 	
 	if (texttimer > 0) then
@@ -814,6 +823,37 @@ function szabopersist.tick()
 end
 
 function szabopersist.debug()
+
+
+
+--	GAMEPLAY.SET_GAME_PAUSED(false)
+
+
+	-- controller support test
+
+	
+	-- dpup=188		a=201	lstk=209
+	-- dpdn=187		b=202	rstk=210
+	-- dplt=189		x=203	
+	-- dprt=190		y=204	
+
+	
+	
+	--print(CONTROLS.IS_CONTROL_JUST_PRESSED(2, 210))
+	
+
+	
+
+	
+
+
+
+
+	--end controller support
+
+
+
+
 
 	local playerPed = PLAYER.PLAYER_PED_ID()
 	local player = PLAYER.GET_PLAYER_PED(playerPed)
@@ -862,7 +902,7 @@ function szabopersist.debug()
 	
 	
 	local paintshaderid = VEHICLE.GET_VEHICLE_MOD_COLOR_1(lastv, 0, 0, 0) --this is kinda buggy
-	print(paintshaderid)
+	-- print(paintshaderid)
 	
 	--SHADERS:	0=metallic	1=classic	2=?			3=matte			4=metal		5=chrome
 	
@@ -1019,8 +1059,25 @@ function szabopersist.debug()
 			-- )
 			
 	-- print(VEHICLE.GET_VEHICLE_WHEEL_TYPE(currentVehicle), VEHICLE.GET_VEHICLE_MOD(currentVehicle, 23))
-
+	
+	
+	
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 return szabopersist
 

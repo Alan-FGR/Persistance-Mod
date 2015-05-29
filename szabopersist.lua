@@ -1,8 +1,8 @@
 --	
 --	####################################################################
 --	SZABO'S PERSISTANCE MOD
---	0.0.1.08bWIP	NOTE: 'b' stands for BETA VERSION! Use at your own risk!!!
---	this update works only with lua plugin v10 
+--	0.0.1.08b	NOTE: 'b' stands for BETA VERSION! Use at your own risk!!!
+--	IMPORTANT: THIS UPDATE WORKS ONLY WITH LUA PLUGIN V10 (2015-05-25 build)
 --	####################################################################
 --
 -- CONFIGURE THE KEYS BELOW. Further down you find a list of the codes
@@ -12,19 +12,22 @@ local disablemodkey = 109
 local enablegamepad = true
 local modenabled = true -- SET TO false if you don't want the persistence to be enabled by default - does not affect saved
 						--vehicles, this only applies to the 'persistent' ones you drove, which can cause problems in missions
--- Controller: 	Save: D-pad Right + Right Stick Click		Reset Vehicles: D-pad Right + Left Stick Click
---						Enable/Disable: D-pad Right + Left Bumper + Left Stick Click
+
+-- CONTROLLER/GAMEPAD KEYS: Save: 			D-pad Right + Right Stick Click
+--							Reset Vehicles: D-pad Right + Left Stick Click
+--							Enable/Disable: D-pad Right + Left Bumper + Left Stick Click
 
 -- CONFIGURE THE PATH WHERE THE FILE WILL BE SAVED. NOTE: Make sure Windows allows writing there.
 -- 99.9% of the problems will be due bad data on the line below OR Windows permissions nonsense.
 -- IMPORTANT!: Double-check the slashes (/) (they're NOT backslashes (\) ) and the LAST SLASH too!
 -- IMPORTANT!: The path must be between quotation marks ("). Use the default value for reference.
--- Make sure the following directory exists and it's writeable (give full permissions)
+-- Make sure the following directory exists and it's writeable (give full permissions), the mod will
+--	try to create it but it's not guaranteed to work properly on all Windows versions.
 local savepath = "C:/szabo_mods/"
 
 -- CHOOSE A COOL TEXT TO APPEAR IN THE LICENSE PLATES OF YOUR SAVED VEHICLES! (Max. 8 dig.)
--- IMPORTANT!: The text must be between quotation marks ("). Use the default value for reference.
-local platetext = "HELLFIRE"
+-- IMPORTANT!: The text must be between quotation marks ("). See the default value for reference.
+local platetext = "MY PLATE"
 local useplates = true --change to false if you don't want the plates to change
 
 --	####################################################################
@@ -64,10 +67,10 @@ local useplates = true --change to false if you don't want the plates to change
 --	When driving a vehicle, park it and press the 'savekey', the plate will change to the one you configured, meaning that
 --	the vehicle will be saved AT THE POSITION IT WAS WHEN YOU PRESSED THE KEY. The map marker of the vehicle will change
 -- 	from ORANGE (meaning it was one of the 3 'persistent' vehicles), to GREEN, meaning it is a SAVED vehicle.
---	Saved vehicles will never despawn, and you can revert all the saved vehicles to their saved positions by pressing
---	the 'reloadkey'. 
+--	When you drive a saved vehicle, its map marker will blink and it will not despawn even when you're far (limited to 3)
+--	You can revert all the saved vehicles to their saved positions by pressing the 'reloadkey'.
 --	If you want to 'unsave' a vehicle, simply press the 'savekey' again when driving it, the plate will change to
---	NOTSAVED and the vehicle will despawn as soon as the engine sees fit.
+--	NOTSAVED and the vehicle will despawn as soon as the game engine sees fit.
 --
 --	How it works:
 --	It manages the vehicles in three ways:
@@ -78,10 +81,12 @@ local useplates = true --change to false if you don't want the plates to change
 --		3- The random vehicles you entered are marked in orange and won't despawn, but just as the above, after there are 3 of
 --				them on the map the former ones will be allowed to 'despawn'.
 --	
---	The saved vehicles are saved to a file in the disk and will be there after you exit and relaunch the game.
+--	The saved vehicles are saved to a file in the disk and they will be there after you exit and relaunch the game.
 --
 -- 	KNOWN ISSUES:
---	THE FOLLOWING WON'T BE SAVED: Neon lights, Plate style, Hardtop (and possibly other variations) on very few cars
+--
+--	THE FOLLOWING WON'T BE SAVED: Tertiary colour of some airplanes
+--
 --	If you don't change the paint type in LSC and browse other paints, the saved paint type is going to be the
 --	one that was highlighted when you cancelled. This doesn't apply to colours, only paint types are affected 
 --	e.g.: matte, metallic, etc.. Please note that if you do change the paint type, no matter which painting was
@@ -89,7 +94,7 @@ local useplates = true --change to false if you don't want the plates to change
 --	rare occasions in which you enter the LSC with a paint 'x' in you car, then browse another category, say, 
 --	'chrome', and hit 'cancel' (Esc or B) until you leave LSC AND don't change the original paint 'x'.
 --	This shouldn't affect most people, but it's a bug that unfortunately I'm not able to fix. The bug is on the
---	following native function: VEHICLE::GET_VEHICLE_MOD_COLOR_1(vehicle, 0, 0, 0)	
+--	following native function: VEHICLE::GET_VEHICLE_MOD_COLOR_1(vehicle, 0, 0, 0).
 --
 --	####################################################################
 --
@@ -115,6 +120,10 @@ local loopspeed = 5			-- increase ONLY if vehicles are taking too long to appear
 --	CHANGELOG
 --	####################################################################
 --	
+--	0.0.1.08b - Updated to Lua Plugin V10.
+--				All data of most vehicles will be saved now
+--				Changed default savepath and the mod now tries to create it (running os command)
+--
 --	0.0.1.07b - Added Controller Support.
 --
 --	0.0.1.06b - Custom tyres works now. (Thanks to unknown modder @ gtaforums.com)
@@ -491,6 +500,9 @@ end
 
 function szabopersist.init()
     -- coroutine.resume(coroutine.create(indieloop))
+	
+	os.execute( "mkdir "..string.gsub(savepath, "/", "\\") )
+	
 	loadsaveddata()
 	
 		-- globcol = math.random(1,60)

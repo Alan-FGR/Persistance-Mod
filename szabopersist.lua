@@ -1,7 +1,8 @@
 --	
 --	####################################################################
 --	SZABO'S PERSISTANCE MOD
---	0.0.1.07bWIP	NOTE: 'b' stands for BETA VERSION! Use at your own risk!!!
+--	0.0.1.08bWIP	NOTE: 'b' stands for BETA VERSION! Use at your own risk!!!
+--	this update works only with lua plugin v10 
 --	####################################################################
 --
 -- CONFIGURE THE KEYS BELOW. Further down you find a list of the codes
@@ -18,11 +19,12 @@ local modenabled = true -- SET TO false if you don't want the persistence to be 
 -- 99.9% of the problems will be due bad data on the line below OR Windows permissions nonsense.
 -- IMPORTANT!: Double-check the slashes (/) (they're NOT backslashes (\) ) and the LAST SLASH too!
 -- IMPORTANT!: The path must be between quotation marks ("). Use the default value for reference.
-local savepath = "C:/Users/Alan/Documents/Rockstar Games/"
+-- Make sure the following directory exists and it's writeable (give full permissions)
+local savepath = "C:/szabo_mods/"
 
 -- CHOOSE A COOL TEXT TO APPEAR IN THE LICENSE PLATES OF YOUR SAVED VEHICLES! (Max. 8 dig.)
 -- IMPORTANT!: The text must be between quotation marks ("). Use the default value for reference.
-local platetext = "MYPLATE"
+local platetext = "HELLFIRE"
 local useplates = true --change to false if you don't want the plates to change
 
 --	####################################################################
@@ -79,7 +81,7 @@ local useplates = true --change to false if you don't want the plates to change
 --	The saved vehicles are saved to a file in the disk and will be there after you exit and relaunch the game.
 --
 -- 	KNOWN ISSUES:
---	THE FOLLOWING WON'T BE SAVED: Neon lights, Plate style
+--	THE FOLLOWING WON'T BE SAVED: Neon lights, Plate style, Hardtop (and possibly other variations) on very few cars
 --	If you don't change the paint type in LSC and browse other paints, the saved paint type is going to be the
 --	one that was highlighted when you cancelled. This doesn't apply to colours, only paint types are affected 
 --	e.g.: matte, metallic, etc.. Please note that if you do change the paint type, no matter which painting was
@@ -143,7 +145,8 @@ local loopspeed = 5			-- increase ONLY if vehicles are taking too long to appear
 --	commenting, making a video, sharing a snippet, etc.
 --	
 --	And want to thank these guys specially:
---	-> janimal @ gtaforums.com	for helping me test and debug the mod extensively
+--	-> janimal @ gtaforums.com for helping me test and debug the mod extensively
+---	-> GTAGeek123 @ gtaforums.com for updating and supporting this mod while I was offline
 --	(TODO add more | please contact me if you think you should be here!)
 --	
 --	
@@ -158,24 +161,35 @@ local loopspeed = 5			-- increase ONLY if vehicles are taking too long to appear
 --	
 --	####################################################################
 --
---	OTHER INFOS TO SAVE, TODO & DEV TESTING/NOTES: 
+--	OTHER INFOS TO SAVE & DEV TESTING/NOTES: 
 --		## MOVED TO THE BOTTOM OF THIS DOCUMENT ##
 --
+--	####################################################################
+--	TODO
 --	####################################################################
 --
 --	TODO: Reveal all saved vehicles on the map when the game is paused.
 
---	TODO: If VEHICLE::IS_VEHICLE_IN_GARAGE_AREA then don't save it
---				### UPDATE: Need to check every garage :(
+--	TODO: Config to disable blips
 
 --	TODO: LOOP ALL VEHICLES AND IF THERE ARE PASSENGERS AND PLAYER IS NOT ONE OF THEM, ALLOW DESPAWN
 --			^(Remove persistence of vehicle if it's being driven and player is not on it to prevent problems.)
 
 --	TODO:	SAVE DIRT LEVEL JUST FOR FUN :P
 --				### UPDATE: Need to save it automatically
+--				### UPDATE2: ^ Possibly when player leaves a saved vehicle?
+
+--	####################################################################
+--	ON HOLD TODO
+--	####################################################################
+
+--	TODO: If VEHICLE::IS_VEHICLE_IN_GARAGE_AREA then don't save it
+--				### UPDATE: Need to check every garage :(
+--				### UPDATE2: ^ INDIVIDUALLY :( :(
 
 --	TODO:	DISABLE SAVING STOLEN CARS (YOU FILTHY THIEVES >:( ... :P)
 --				### UPDATE: VEHICLE.IS_VEHICLE_STOLEN always returns false :(
+--				### UPDATE2: Possibly not gonna happen :(
 
 --	TODO:	learn how to use lua properly
 --	TODO:	a function_ to deal with the repetitive loops
@@ -392,6 +406,27 @@ local function addvehicletosavedarray(v)
 	local paintshaderid2 = VEHICLE.GET_VEHICLE_MOD_COLOR_2(v, 0, 0)
 	table.insert( vals, paintshaderid2)
 	
+	--## CHANGES by GTAGeek123 below
+	table.insert( vals,	VEHICLE.GET_VEHICLE_NUMBER_PLATE_TEXT_INDEX(v)) 	
+	table_insertmultiple ( vals, VEHICLE._GET_VEHICLE_NEON_LIGHTS_COLOUR (v, 0, 0, 0))
+	table.insert (vals, VEHICLE._IS_VEHICLE_NEON_LIGHT_ENABLED(v,0))
+	table.insert (vals, VEHICLE._IS_VEHICLE_NEON_LIGHT_ENABLED(v,1))
+	table.insert (vals, VEHICLE._IS_VEHICLE_NEON_LIGHT_ENABLED(v,2))
+	table.insert (vals, VEHICLE._IS_VEHICLE_NEON_LIGHT_ENABLED(v,3))
+	
+	--## UPDATE 0.0.1.08b below
+	table.insert (vals, booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(v,1)))
+	table.insert (vals, booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(v,2)))
+	table.insert (vals, booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(v,3)))
+	table.insert (vals, booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(v,4)))
+	table.insert (vals, booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(v,5)))
+	table.insert (vals, booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(v,6)))
+	table.insert (vals, booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(v,7)))
+	table.insert (vals, booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(v,8)))
+	table.insert (vals, booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(v,9)))
+	
+	--table.insert (vals, VEHICLE.GET_VEHICLE_NUMBER_PLATE_TEXT(v))
+	--
 	
 	
 	unvid = unvid+1
@@ -467,9 +502,14 @@ local function setvehicledata(v, dtype, parslist)
 		if (dtype == 'extracols') then
 			print('resetting unsaved colours to neutral colour (backwards compatibility)')
 			VEHICLE.SET_VEHICLE_EXTRA_COLOURS(v, 0, 0)
+		else
+			print(dtype..' data is missing, doing nothing for backwards compatibility')
 		end
 		return 3
 	elseif (dtype == 'mod') then
+		if (tonumber(parslist[2]) > 1000) then
+			parslist[2] = -1
+		end
 		VEHICLE.SET_VEHICLE_MOD(v, parslist[1], parslist[2], false)
 	elseif (dtype == 'togglemod') then
 		VEHICLE.TOGGLE_VEHICLE_MOD(v, parslist[1], inttobool(parslist[2]))
@@ -496,6 +536,29 @@ local function setvehicledata(v, dtype, parslist)
 				VEHICLE.SET_VEHICLE_MOD_COLOR_2(v, parslist[2], 0)
 			end
 		end
+	
+	--## CHANGES by GTAGeek123 below
+	elseif (dtype == 'plate') then
+		VEHICLE.SET_VEHICLE_NUMBER_PLATE_TEXT_INDEX(v, parslist[1])
+	elseif (dtype == 'platet') then 
+		VEHICLE.SET_VEHICLE_NUMBER_PLATE_TEXT(v, parslist[1])
+		
+	--## UPDATE 0.0.1.08b below
+	elseif (dtype == 'neon' and parslist[2] ~= nil) then
+		VEHICLE._SET_VEHICLE_NEON_LIGHT_ENABLED(v, parslist[1], inttobool(parslist[2]))
+	elseif (dtype == 'neonc' and parslist[2] ~= nil) then	
+		VEHICLE._SET_VEHICLE_NEON_LIGHTS_COLOUR(v, parslist[1], parslist[2], parslist[3])
+	elseif (dtype == 'extra' and parslist[2] ~= nil) then
+		if(tonumber(parslist[2]) == 0) then
+			VEHICLE.SET_VEHICLE_EXTRA(v, parslist[1], -1)
+		else
+			VEHICLE.SET_VEHICLE_EXTRA(v, parslist[1], 0)
+		end
+	
+	--
+	
+	else
+		print('invalid dtype or parameter(s) - (from 2nd onwards)')
 	end
 	
 end
@@ -569,7 +632,28 @@ local function spawnvehiclefromdata(vals)
 		setvehicledata(v, 'ctyres', {0, vals[42] })
 		setvehicledata(v, 'ctyres', {'back', vals[43] })  --check if is bike?
 		
+		--## CHANGES by GTAGeek123 below
+		setvehicledata(v, 'plate',{ vals[46] })
+		setvehicledata(v, 'neon', {0, vals[50]})
+		setvehicledata(v, 'neon', {1, vals[51]})
+		setvehicledata(v, 'neon', {2, vals[52]})
+		setvehicledata(v, 'neon', {3, vals[53]})
+		setvehicledata(v, 'neonc', {vals[47], vals[48], vals[49]})
+		--setvehicledata(v, 'platet',{ vals[63] }) not working latest
+	
+		--## UPDATE 0.0.1.08b changes below
 		
+		setvehicledata(v, 'extra', {1, vals[54]})
+		setvehicledata(v, 'extra', {2, vals[55]})
+		setvehicledata(v, 'extra', {3, vals[56]})
+		setvehicledata(v, 'extra', {4, vals[57]})
+		setvehicledata(v, 'extra', {5, vals[58]})
+		setvehicledata(v, 'extra', {6, vals[59]})
+		setvehicledata(v, 'extra', {7, vals[60]})
+		setvehicledata(v, 'extra', {8, vals[61]})
+		setvehicledata(v, 'extra', {9, vals[62]})
+
+		--
 		
 		--end cloning dolly
 		
@@ -818,7 +902,7 @@ function szabopersist.tick()
 		drawtext()
 	end
 	
-	--szabopersist.debug()
+	-- szabopersist.debug()
 	
 end
 
@@ -860,7 +944,19 @@ function szabopersist.debug()
 	local playerID = PLAYER.PLAYER_ID()
 	local playerPos = ENTITY.GET_ENTITY_COORDS(playerPed, true)
 	
-	local currentVehicle = PED.GET_VEHICLE_PED_IS_IN(playerPed, false)	
+	local currentVehicle = PED.GET_VEHICLE_PED_IS_IN(playerPed, false)
+	
+	print(
+	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,1)),
+	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,2)),
+	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,3)),
+	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,4)),
+	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,5)),
+	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,6)),
+	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,7)),
+	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,8)),
+	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,9))
+	)
 
 	if(get_key_pressed(107)) then
 		local playerPed = PLAYER.PLAYER_PED_ID()

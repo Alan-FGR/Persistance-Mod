@@ -323,14 +323,14 @@ end
 local function setvehiclemarker(v, mtype)
 
 	local blink = false
-	local col = 16742399 --green-blue		spawned
+	local col = 0xFF77FF --green-blue		spawned
 	if(mtype == 1) then
 		--col = 2013200639 --green-yellow		driven
-		col = 16742399 --green-blue
+		--col = 16742399 --green-blue
 		blink = true
 	elseif (mtype == 2) then
 		--col = 4294902015 --yellow	persist
-		col = 0xFF9900FF --orange	persist
+		col = 47--0xFF9900FF --orange	persist --broken in v10
 	end
 
 	if (useplates and mtype ~= 2) then
@@ -492,6 +492,10 @@ end
 function szabopersist.init()
     -- coroutine.resume(coroutine.create(indieloop))
 	loadsaveddata()
+	
+		-- globcol = math.random(1,60)
+		-- print(globcol)
+	
 end
 
 local function setvehicledata(v, dtype, parslist)
@@ -902,7 +906,7 @@ function szabopersist.tick()
 		drawtext()
 	end
 	
-	-- szabopersist.debug()
+	szabopersist.debug()
 	
 end
 
@@ -946,29 +950,32 @@ function szabopersist.debug()
 	
 	local currentVehicle = PED.GET_VEHICLE_PED_IS_IN(playerPed, false)
 	
-	print(
-	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,1)),
-	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,2)),
-	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,3)),
-	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,4)),
-	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,5)),
-	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,6)),
-	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,7)),
-	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,8)),
-	booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,9))
-	)
+	-- print(
+	-- booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,1)),
+	-- booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,2)),
+	-- booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,3)),
+	-- booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,4)),
+	-- booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,5)),
+	-- booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,6)),
+	-- booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,7)),
+	-- booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,8)),
+	-- booltoint(VEHICLE.IS_VEHICLE_EXTRA_TURNED_ON(currentVehicle,9))
+	-- )
 
 	if(get_key_pressed(107)) then
-		local playerPed = PLAYER.PLAYER_PED_ID()
-		local currentVehicle = PED.GET_VEHICLE_PED_IS_IN(playerPed, false)
+	
+
+	
+		-- local playerPed = PLAYER.PLAYER_PED_ID()
+		-- local currentVehicle = PED.GET_VEHICLE_PED_IS_IN(playerPed, false)
 		
 		
-		VEHICLE.SET_VEHICLE_MOD_KIT(currentVehicle, 0)
+		-- VEHICLE.SET_VEHICLE_MOD_KIT(currentVehicle, 0)
 		
-		local platestyle = (VEHICLE._0xF11BC2DD9A3E7195(currentVehicle))
+		-- local platestyle = (VEHICLE._0xF11BC2DD9A3E7195(currentVehicle))
 		
-		print(platestyle)
-		VEHICLE.SET_VEHICLE_NUMBER_PLATE_TEXT_INDEX(currentVehicle, 2)
+		-- print(platestyle)
+		-- VEHICLE.SET_VEHICLE_NUMBER_PLATE_TEXT_INDEX(currentVehicle, 2)
 		
 
 		

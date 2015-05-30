@@ -482,6 +482,9 @@ local function loadsaveddata()
 	local sfile = savepath .. "szabopersist"
 	
 	if (not file_exists(sfile)) then
+		print("I'm running os.execute which will break the terminal output for some reason.")
+		print("Possibly you won't be able to read anything in the terminal after this very text.")
+		os.execute( "mkdir "..string.gsub(savepath, "/", "\\") )
 		io.close(io.open(sfile, "w")) --kinda touch
 	end
 	
@@ -500,9 +503,6 @@ end
 
 function szabopersist.init()
     -- coroutine.resume(coroutine.create(indieloop))
-	
-	os.execute( "mkdir "..string.gsub(savepath, "/", "\\") )
-	
 	loadsaveddata()
 	
 		-- globcol = math.random(1,60)

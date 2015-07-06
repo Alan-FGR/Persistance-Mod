@@ -10,6 +10,7 @@ local savekey = 96
 local reloadkey = 110
 local disablemodkey = 109
 local enablegamepad = true
+local disableinmissions = true -- set to false if you want the persistence enabled in missions
 local modenabled = true -- SET TO false if you don't want the persistence to be enabled by default - does not affect saved
 						--vehicles, this only applies to the 'persistent' ones you drove, which can cause problems in missions
 
@@ -887,7 +888,7 @@ function szabopersist.tick()
 			end
 		end
 		
-		if (not vehiclePersistent and modenabled) then
+		if (not vehiclePersistent and modenabled and not (disableinmissions and GAMEPLAY.GET_MISSION_FLAG())) then
 			
 			if (#persistentVehicles > persistentqty-1) then 
 				removevehiclemarker(persistentVehicles[1])
